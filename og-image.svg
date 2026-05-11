@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#4493f8"/>
+      <stop offset="100%" stop-color="#58a6ff"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#3d444d" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <text x="950" y="540" font-family="ui-monospace, monospace" font-size="200" font-weight="700" fill="#3d444d" opacity="0.3">&lt;/&gt;</text>
+  <g transform="translate(80, 80)">
+    <rect width="56" height="56" rx="12" fill="url(#accent)"/>
+    <text x="28" y="38" font-family="ui-monospace, monospace" font-size="22" font-weight="700" fill="white" text-anchor="middle">&lt;/&gt;</text>
+  </g>
+  <text x="156" y="118" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="24" font-weight="600" fill="#9198a1">View Source</text>
+  <text x="80" y="290" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="76" font-weight="700" fill="#f0f6fc" letter-spacing="-2">在 Safari 一鍵</text>
+  <text x="80" y="380" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="76" font-weight="700" fill="#f0f6fc" letter-spacing="-2">查看網頁<tspan fill="url(#accent)">原始碼</tspan></text>
+  <text x="80" y="450" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="28" fill="#9198a1">語法高亮 · 即時搜尋 · DOM/Source 切換</text>
+  <g transform="translate(80, 510)">
+    <rect width="120" height="40" rx="20" fill="#151b23" stroke="#3d444d"/>
+    <text x="60" y="26" font-family="ui-monospace, monospace" font-size="15" fill="#9198a1" text-anchor="middle">Bookmarklet</text>
+  </g>
+  <g transform="translate(216, 510)">
+    <rect width="90" height="40" rx="20" fill="#151b23" stroke="#3d444d"/>
+    <text x="45" y="26" font-family="ui-monospace, monospace" font-size="15" fill="#9198a1" text-anchor="middle">Safari</text>
+  </g>
+  <g transform="translate(322, 510)">
+    <rect width="80" height="40" rx="20" fill="#151b23" stroke="#3d444d"/>
+    <text x="40" y="26" font-family="ui-monospace, monospace" font-size="15" fill="#9198a1" text-anchor="middle">MIT</text>
+  </g>
+  <text x="1120" y="595" font-family="ui-monospace, monospace" font-size="18" fill="#656c76" text-anchor="end">github.com/你的帳號/view-source-bookmarklet</text>
+</svg>
