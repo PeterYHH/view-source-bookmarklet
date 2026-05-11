@@ -3,165 +3,713 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>View Source Bookmarklet</title>
-<meta name="description" content="一個 Safari bookmarklet，點一下查看網頁原始碼，支援語法高亮、搜尋、DOM/Source 切換。">
+<title>View Source · 在 Safari 一鍵查看網頁原始碼</title>
+<meta name="description" content="一個給 Safari、Chrome、Firefox 使用的 bookmarklet，點一下就能查看網頁原始碼，支援語法高亮、即時搜尋、DOM 與 Source 雙模式切換。">
+
+<!-- Open Graph -->
+<meta property="og:title" content="View Source Bookmarklet">
+<meta property="og:description" content="在任何瀏覽器一鍵查看網頁原始碼，支援語法高亮、搜尋、DOM/Source 切換。">
+<meta property="og:type" content="website">
+
 <style>
   :root {
-    --bg: #fafafa;
-    --fg: #222;
-    --muted: #666;
+    --bg: #ffffff;
+    --bg-elevated: #fafafa;
+    --bg-code: #f6f8fa;
+    --fg: #1f2328;
+    --fg-muted: #59636e;
+    --fg-subtle: #818b98;
+    --border: #d1d9e0;
+    --border-subtle: #d1d9e0b3;
     --accent: #0969da;
-    --border: #e1e4e8;
-    --code-bg: #f6f8fa;
+    --accent-hover: #0860c7;
+    --success: #1a7f37;
+    --warning-bg: #fff8c5;
+    --warning-fg: #4a3e00;
+    --warning-border: #d4a72c;
+    --radius: 6px;
+    --radius-lg: 12px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.06);
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Noto Sans TC", Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   }
+
+  [data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-elevated: #151b23;
+    --bg-code: #151b23;
+    --fg: #f0f6fc;
+    --fg-muted: #9198a1;
+    --fg-subtle: #656c76;
+    --border: #3d444d;
+    --border-subtle: #3d444d80;
+    --accent: #4493f8;
+    --accent-hover: #58a6ff;
+    --success: #3fb950;
+    --warning-bg: #2d2200;
+    --warning-fg: #d4a72c;
+    --warning-border: #4a3a00;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.3);
+  }
+
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --bg: #0d1117;
-      --fg: #e6edf3;
-      --muted: #8b949e;
-      --accent: #58a6ff;
-      --border: #30363d;
-      --code-bg: #161b22;
+      --bg-elevated: #151b23;
+      --bg-code: #151b23;
+      --fg: #f0f6fc;
+      --fg-muted: #9198a1;
+      --fg-subtle: #656c76;
+      --border: #3d444d;
+      --border-subtle: #3d444d80;
+      --accent: #4493f8;
+      --accent-hover: #58a6ff;
+      --success: #3fb950;
+      --warning-bg: #2d2200;
+      --warning-fg: #d4a72c;
+      --warning-border: #4a3a00;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.3);
     }
   }
+
   * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: var(--font-sans);
     background: var(--bg);
     color: var(--fg);
     line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  a:hover { text-decoration: underline; }
+
+  /* Layout */
   .container {
-    max-width: 720px;
+    max-width: 880px;
     margin: 0 auto;
-    padding: 48px 24px;
+    padding: 0 24px;
   }
-  h1 { font-size: 2rem; margin: 0 0 8px; }
-  .tagline { color: var(--muted); margin: 0 0 32px; }
-  .install-box {
-    background: var(--code-bg);
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 16px 0;
+    position: sticky;
+    top: 0;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    z-index: 10;
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--accent);
+    border-radius: var(--radius);
+    display: grid;
+    place-items: center;
+    color: white;
+    font-family: var(--font-mono);
+    font-size: 14px;
+  }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .icon-btn {
+    width: 32px;
+    height: 32px;
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 24px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    color: var(--fg-muted);
+    transition: all 0.15s ease;
+  }
+  .icon-btn:hover {
+    color: var(--fg);
+    border-color: var(--fg-muted);
+  }
+
+  /* Hero */
+  .hero {
+    padding: 80px 0 60px;
     text-align: center;
-    margin: 24px 0;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: var(--fg-muted);
+    margin-bottom: 20px;
+  }
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--success);
+    border-radius: 50%;
+  }
+  h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1.15;
+    margin: 0 0 16px;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+  .lede {
+    font-size: 1.15rem;
+    color: var(--fg-muted);
+    max-width: 560px;
+    margin: 0 auto 32px;
+  }
+
+  /* Install card */
+  .install-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px 24px;
+    margin: 40px auto 0;
+    max-width: 520px;
+    box-shadow: var(--shadow-md);
   }
   .drag-btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     background: var(--accent);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 6px;
-    text-decoration: none;
+    color: white !important;
+    padding: 12px 28px;
+    border-radius: var(--radius);
     font-weight: 600;
     cursor: grab;
     user-select: none;
+    transition: all 0.15s ease;
+    text-decoration: none !important;
+    font-size: 1rem;
   }
-  .drag-btn:active { cursor: grabbing; }
-  .hint { color: var(--muted); font-size: 0.9rem; margin-top: 12px; }
-  h2 { margin-top: 40px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-  ol li { margin-bottom: 8px; }
-  code {
-    background: var(--code-bg);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.9em;
+  .drag-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
   }
-  pre {
-    background: var(--code-bg);
+  .drag-btn:active { cursor: grabbing; transform: translateY(0); }
+  .install-hint {
+    color: var(--fg-muted);
+    font-size: 0.9rem;
+    margin-top: 14px;
+  }
+  .install-hint kbd {
+    background: var(--bg-code);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 16px;
-    overflow-x: auto;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: var(--font-mono);
     font-size: 0.85em;
-    max-height: 200px;
+  }
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 24px 0;
+    color: var(--fg-subtle);
+    font-size: 0.85rem;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle);
   }
   .copy-btn {
-    background: var(--accent);
-    color: white;
-    border: none;
+    background: transparent;
+    color: var(--fg);
+    border: 1px solid var(--border);
     padding: 8px 16px;
-    border-radius: 6px;
+    border-radius: var(--radius);
     cursor: pointer;
     font-size: 0.9rem;
-    margin-top: 8px;
+    font-family: inherit;
+    transition: all 0.15s ease;
   }
-  .copy-btn:hover { opacity: 0.9; }
-  footer {
-    margin-top: 60px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
-    color: var(--muted);
+  .copy-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Sections */
+  section {
+    padding: 60px 0;
+    border-top: 1px solid var(--border-subtle);
+  }
+  h2 {
+    font-size: 1.75rem;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+    font-weight: 700;
+  }
+  .section-sub {
+    color: var(--fg-muted);
+    margin: 0 0 32px;
+  }
+
+  /* Feature grid */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .feature {
+    padding: 20px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    transition: border-color 0.15s ease;
+  }
+  .feature:hover { border-color: var(--border); }
+  .feature-icon {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+  }
+  .feature h3 {
+    font-size: 1rem;
+    margin: 0 0 4px;
+    font-weight: 600;
+  }
+  .feature p {
+    color: var(--fg-muted);
     font-size: 0.9rem;
-    text-align: center;
+    margin: 0;
   }
-  footer a { color: var(--accent); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .tab {
+    background: transparent;
+    border: none;
+    padding: 10px 16px;
+    cursor: pointer;
+    color: var(--fg-muted);
+    font-family: inherit;
+    font-size: 0.95rem;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s ease;
+  }
+  .tab:hover { color: var(--fg); }
+  .tab.active {
+    color: var(--fg);
+    border-bottom-color: var(--accent);
+    font-weight: 500;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  ol { padding-left: 24px; }
+  ol li { margin-bottom: 8px; }
+  ol li::marker { color: var(--fg-muted); font-variant-numeric: tabular-nums; }
+
+  /* Code block */
+  .code-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    margin-top: 16px;
+    overflow: hidden;
+  }
+  .code-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: color-mix(in srgb, var(--bg) 50%, var(--bg-code));
+  }
+  .code-block-label {
+    font-size: 0.8rem;
+    color: var(--fg-muted);
+    font-family: var(--font-mono);
+  }
+  .code-block pre {
+    margin: 0;
+    padding: 12px;
+    overflow-x: auto;
+    max-height: 200px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--fg);
+  }
+
+  /* FAQ */
+  .faq-item {
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 16px 0;
+  }
+  .faq-item:last-child { border-bottom: none; }
+  .faq-item summary {
+    cursor: pointer;
+    font-weight: 500;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::after {
+    content: '+';
+    font-size: 1.2rem;
+    color: var(--fg-muted);
+    transition: transform 0.15s ease;
+  }
+  .faq-item[open] summary::after { transform: rotate(45deg); }
+  .faq-item p {
+    margin: 12px 0 0;
+    color: var(--fg-muted);
+  }
+
+  code {
+    background: var(--bg-code);
+    border: 1px solid var(--border-subtle);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+  }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border-subtle);
+    padding: 32px 0;
+    margin-top: 40px;
+    color: var(--fg-muted);
+    font-size: 0.9rem;
+  }
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .footer-links {
+    display: flex;
+    gap: 20px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--fg);
+    color: var(--bg);
+    padding: 10px 20px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    box-shadow: var(--shadow-md);
+    z-index: 100;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Focus */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 </style>
 </head>
 <body>
-<div class="container">
 
-  <h1>View Source Bookmarklet</h1>
-  <p class="tagline">在 Safari 點一下，查看網頁原始碼。支援語法高亮、搜尋、DOM/Source 切換。</p>
-
-  <div class="install-box">
-    <a class="drag-btn" id="bookmarklet" href="#">📖 查看原始碼</a>
-    <p class="hint">把上方按鈕拖曳到書籤列即可安裝（桌面版瀏覽器）</p>
+<header>
+  <div class="container header-inner">
+    <div class="logo">
+      <div class="logo-icon">&lt;/&gt;</div>
+      <span>View Source</span>
+    </div>
+    <div class="header-actions">
+      <a href="https://github.com/peteryhh/view-source-bookmarklet" class="icon-btn" aria-label="GitHub">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      </a>
+      <button class="icon-btn" id="themeToggle" aria-label="切換主題">
+        <svg id="iconLight" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="display:none"><path d="M8 12.5a4.5 4.5 0 100-9 4.5 4.5 0 000 9zM8 0a.5.5 0 01.5.5v1a.5.5 0 01-1 0v-1A.5.5 0 018 0zm0 13a.5.5 0 01.5.5v1a.5.5 0 01-1 0v-1A.5.5 0 018 13zm8-5a.5.5 0 01-.5.5h-1a.5.5 0 010-1h1a.5.5 0 01.5.5zM3 8a.5.5 0 01-.5.5h-1a.5.5 0 010-1h1A.5.5 0 013 8z"/></svg>
+        <svg id="iconDark" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6 .278a.768.768 0 01.08.858 7.208 7.208 0 00-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 01.81.316.733.733 0 01-.031.893A8.349 8.349 0 018.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 016 .278z"/></svg>
+      </button>
+    </div>
   </div>
+</header>
 
-  <h2>功能</h2>
-  <ul>
-    <li>🎨 語法高亮（Prism.js）</li>
-    <li>🔢 行號顯示</li>
-    <li>🔍 即時搜尋，顯示匹配數量</li>
-    <li>🔄 DOM / Source 切換：當前 DOM 或伺服器原始 HTML</li>
-    <li>🌓 深色 / 淺色主題</li>
-    <li>✨ Beautify 美化壓縮過的 HTML</li>
-    <li>📋 一鍵複製</li>
-  </ul>
+<main>
+  <section class="hero" style="border: none; padding-top: 60px">
+    <div class="container">
+      <div class="badge">
+        <span class="badge-dot"></span>
+        <span id="version">v1.0.0</span>
+      </div>
+      <h1>在 Safari 一鍵<br>查看網頁原始碼</h1>
+      <p class="lede">一個輕量 bookmarklet，支援語法高亮、即時搜尋、DOM 與 Source 雙模式切換。完全在本機執行，無追蹤、無依賴。</p>
 
-  <h2>iOS Safari 安裝步驟</h2>
-  <ol>
-    <li>隨便加任一個網頁到書籤</li>
-    <li>進「書籤」→ 編輯剛建的書籤</li>
-    <li>標題改成「查看原始碼」</li>
-    <li>網址欄整個刪掉，貼上下方程式碼</li>
-    <li>存檔</li>
-  </ol>
+      <div class="install-card">
+        <a class="drag-btn" id="bookmarklet" href="#" draggable="true">
+          📖 查看原始碼
+        </a>
+        <p class="install-hint">拖曳上方按鈕到書籤列（按 <kbd>⌘⇧B</kbd> 可叫出書籤列）</p>
+        <div class="divider">或</div>
+        <button class="copy-btn" onclick="copyCode()">複製程式碼</button>
+        <p class="install-hint" style="margin-top: 12px">iOS 使用者請見下方安裝步驟</p>
+      </div>
+    </div>
+  </section>
 
-  <button class="copy-btn" onclick="copyCode()">📋 複製程式碼</button>
-  <pre id="code-block"></pre>
+  <section id="features">
+    <div class="container">
+      <h2>功能</h2>
+      <p class="section-sub">為了讓檢查原始碼這件事盡可能順手。</p>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">🎨</div>
+          <h3>語法高亮</h3>
+          <p>由 Prism.js 提供，HTML 標籤、屬性、值一目了然。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔍</div>
+          <h3>即時搜尋</h3>
+          <p>輸入即高亮所有匹配項目，顯示計數。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔄</div>
+          <h3>DOM / Source</h3>
+          <p>切換當前 DOM 或伺服器原始回傳的 HTML。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">✨</div>
+          <h3>美化排版</h3>
+          <p>對壓縮過的 HTML 自動縮排重排，可隨時切換。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🌓</div>
+          <h3>深淺主題</h3>
+          <p>深色淺色配色一鍵切換，看一整天眼睛不累。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🛡️</div>
+          <h3>CSP 降級</h3>
+          <p>遇到嚴格 CSP 自動降級為純文字，仍可檢視與搜尋。</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <h2>桌面 Safari / Chrome / Firefox</h2>
-  <p>把書籤列叫出來（<code>Cmd+Shift+B</code>），直接拖上方按鈕到書籤列即可。</p>
+  <section id="install">
+    <div class="container">
+      <h2>安裝</h2>
+      <p class="section-sub">選擇你使用的平台。</p>
 
-  <h2>原始碼</h2>
-  <p>專案在 <a href="https://github.com/peteryhh/view-source-bookmarklet">GitHub</a>，歡迎 issue 或 PR。</p>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="ios" role="tab">iOS Safari</button>
+        <button class="tab" data-tab="desktop" role="tab">桌面瀏覽器</button>
+      </div>
 
-  <footer>
-    MIT License · Made by <a href="https://peteryang.me">Peter Yang</a>
-  </footer>
-</div>
+      <div class="tab-panel active" data-panel="ios">
+        <ol>
+          <li>用 Safari 開啟任意網頁，按底部分享圖示 → 加入書籤</li>
+          <li>進入「書籤」→ 找到剛新增的那筆 → 點「編輯」</li>
+          <li>標題改為「查看原始碼」（或你喜歡的名字）</li>
+          <li>網址欄整個清空，貼上以下程式碼，然後存檔</li>
+        </ol>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-label">bookmarklet.min.js</span>
+            <button class="copy-btn" onclick="copyCode()" style="padding: 4px 10px; font-size: 0.8rem">複製</button>
+          </div>
+          <pre id="code-block"></pre>
+        </div>
+        <p style="margin-top: 16px; color: var(--fg-muted); font-size: 0.9rem">之後在任何網頁，點底部地址列旁的書籤圖示、選擇這個項目即可。</p>
+      </div>
+
+      <div class="tab-panel" data-panel="desktop">
+        <ol>
+          <li>叫出書籤列：Safari <code>⌘⇧B</code> · Chrome / Edge <code>⌘⇧B</code> · Firefox <code>⌘⇧B</code></li>
+          <li>把上方藍色「查看原始碼」按鈕拖曳到書籤列，放開即完成</li>
+          <li>在任何網頁點該書籤即可開啟原始碼檢視器</li>
+        </ol>
+        <p style="margin-top: 16px; color: var(--fg-muted); font-size: 0.9rem">如果拖曳沒反應，可改用「複製程式碼」按鈕：在書籤列右鍵 → 新增書籤 → 網址貼上程式碼。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="container">
+      <h2>常見問題</h2>
+      <p class="section-sub">先看看是否已經有答案。</p>
+
+      <details class="faq-item">
+        <summary>DOM 跟 Source 模式有什麼差別？</summary>
+        <p><strong>DOM</strong> 是當前頁面經過 JavaScript 修改後的 DOM 結構，反映你「看到」的內容；<strong>Source</strong> 透過 fetch 重新取得伺服器原始回傳的 HTML，反映「下載到」的內容。對於 SPA 或大量動態渲染的網站，兩者差異會很明顯。</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>為什麼在某些網站（如 GitHub）功能變少了？</summary>
+        <p>這些網站設定了嚴格的 Content Security Policy（CSP），阻擋了從 CDN 載入的 Prism.js 跟 js-beautify。本工具會自動偵測並降級——語法高亮與美化會被停用，但原始碼仍可正常檢視、搜尋、複製，並顯示提示訊息說明原因。</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Source 模式顯示「抓取失敗」？</summary>
+        <p>可能原因：（1）頁面需要登入而 fetch 沒帶 cookie；（2）站台設定了 CSP <code>connect-src</code> 限制；（3）跨來源請求被擋。DOM 模式不受這些影響，可以改用 DOM 模式。</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>會收集我的資料嗎？</summary>
+        <p>不會。整個工具在瀏覽器本機執行，沒有任何 analytics、tracking 或外部 API 呼叫。唯一的網路請求是從公開 CDN（cdnjs.cloudflare.com）載入 Prism.js 與 js-beautify。原始碼開源在 GitHub，可自行檢視驗證。</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>可以離線使用嗎？</summary>
+        <p>目前版本依賴 CDN 載入語法高亮與美化函式庫，需要網路連線。若有離線需求，可從 GitHub 下載完整版本自行打包所有依賴。</p>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container footer-inner">
+    <div>
+      <span id="footer-version">v1.0.0</span> · MIT License
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/peteryhh/view-source-bookmarklet">原始碼</a>
+      <a href="https://github.com/peteryhh/view-source-bookmarklet/issues">回報問題</a>
+      <a href="https://peteryang.me">Peter Yang</a>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
 
 <script>
-// 從 dist 載入 bookmarklet 程式碼，避免維護兩份
+const VERSION = 'v1.0.0';
+document.getElementById('version').textContent = VERSION;
+document.getElementById('footer-version').textContent = VERSION;
+
+// 載入 bookmarklet 程式碼
 fetch('dist/bookmarklet.min.js')
-  .then(r => r.text())
+  .then(r => r.ok ? r.text() : Promise.reject(r.status))
   .then(code => {
+    code = code.trim();
     document.getElementById('bookmarklet').href = code;
     document.getElementById('code-block').textContent = code;
+  })
+  .catch(err => {
+    document.getElementById('code-block').textContent = '// 載入失敗，請至 GitHub 查看：dist/bookmarklet.min.js';
   });
 
+// 複製程式碼
 function copyCode() {
   const code = document.getElementById('code-block').textContent;
+  if (!code || code.startsWith('//')) {
+    showToast('程式碼尚未載入');
+    return;
+  }
   navigator.clipboard.writeText(code).then(() => {
-    const btn = event.target;
-    const original = btn.textContent;
-    btn.textContent = '✓ 已複製';
-    setTimeout(() => btn.textContent = original, 2000);
+    showToast('✓ 已複製 ' + code.length + ' 字元');
+  }).catch(() => {
+    showToast('複製失敗，請手動選取');
   });
 }
+
+// Toast
+let toastTimer;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// Tab 切換
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+    document.querySelectorAll('.tab-panel').forEach(p => {
+      p.classList.toggle('active', p.dataset.panel === target);
+    });
+  });
+});
+
+// 主題切換
+const themeToggle = document.getElementById('themeToggle');
+const iconLight = document.getElementById('iconLight');
+const iconDark = document.getElementById('iconDark');
+
+function applyTheme(theme) {
+  if (theme === 'system') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+  const isDark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  iconLight.style.display = isDark ? 'block' : 'none';
+  iconDark.style.display = isDark ? 'none' : 'block';
+}
+
+const savedTheme = localStorage.getItem('theme') || 'system';
+applyTheme(savedTheme);
+
+themeToggle.addEventListener('click', () => {
+  const current = localStorage.getItem('theme') || 'system';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('theme', next);
+  applyTheme(next);
+});
 </script>
+
 </body>
 </html>
